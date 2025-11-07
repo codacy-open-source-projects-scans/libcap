@@ -13,13 +13,13 @@ PSXTITLE=libpsx
 PSXLIBNAME=$(PSXTITLE).so
 STAPSXLIBNAME=$(PSXTITLE).a
 
-CAPFILES=cap_alloc cap_proc cap_extint cap_flag cap_text cap_file
+CAPFILES=cap_alloc cap_proc cap_extint cap_flag cap_text cap_file cap_syscalls
 CAPMAGICOBJ=cap_magic.o
-PSXFILES=../psx/psx
+PSXFILES=../psx/psx ../psx/psx_calls ../psx/wrap/psx_wrap
 PSXMAGICOBJ=psx_magic.o
 
 # Always build libcap sources this way:
-CFLAGS += -fPIC
+CFLAGS += -fPIC -D_LIBPSX_PTHREAD_LINKAGE
 
 # https://bugzilla.kernel.org/show_bug.cgi?id=219168
 OVERRIDE_BSYMBOLIC_FUNCTIONS := -Wl,-Bsymbolic-functions
@@ -80,7 +80,7 @@ $(PSXTITLE).pc: $(PSXTITLE).pc.in
 		$< >$@
 
 _makenames: _makenames.c cap_names.list.h
-	$(BUILD_CC) $(BUILD_CFLAGS) $(BUILD_CPPFLAGS) $< -o $@
+	$(BUILD_CC) $(BUILD_CFLAGS) $(BUILD_CPPFLAGS) $< -o $@ $(BUILD_LDFLAGS)
 
 cap_names.h: _makenames
 	./_makenames > cap_names.h

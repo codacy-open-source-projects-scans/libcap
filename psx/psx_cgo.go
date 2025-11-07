@@ -1,3 +1,4 @@
+//go:build linux && cgo
 // +build linux,cgo
 
 package psx // import "kernel.org/pub/linux/libs/security/libcap/psx"
@@ -8,8 +9,6 @@ import (
 	"syscall"
 )
 
-// #cgo LDFLAGS: -lpthread -Wl,-wrap,pthread_create
-//
 // #include <errno.h>
 // #include "psx_syscall.h"
 //
@@ -55,8 +54,8 @@ func forceFatal() {
 //
 // If CGO_ENABLED=1 it uses the libpsx function C.psx_syscall3(), with
 // libpsx:psx_set_sensitivity(PSX_ERROR) - which means the program
-// will be SIGSYS killed when inconsistent return values are returned
-// for any pthread.
+// will be signo=33 killed when inconsistent return values are
+// returned for any pthread.
 //
 // If CGO_ENABLED=0 it redirects to the go1.16+
 // syscall.AllThreadsSyscall() function. This function panics if
