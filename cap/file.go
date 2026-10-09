@@ -199,7 +199,11 @@ func (c *Set) SetNSOwner(uid int) {
 func (c *Set) packFileCap() ([]byte, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+	return c.packFileCapLocked()
+}
 
+// packFileCapLocked transforms c while it is read locked by the caller.
+func (c *Set) packFileCapLocked() ([]byte, error) {
 	var magic uint32
 	switch words {
 	case 1:
@@ -217,11 +221,16 @@ func (c *Set) packFileCap() ([]byte, error) {
 	if magic == 0 {
 		return nil, ErrBadSize
 	}
-	eff := uint32(0)
+	hasEffective := false
+	validEffective := true
 	for _, f := range c.flat {
-		eff |= (f[Permitted] | f[Inheritable]) & f[Effective]
+		hasEffective = hasEffective || f[Effective] != 0
+		validEffective = validEffective && f[Effective] == f[Permitted]|f[Inheritable]
 	}
-	if eff != 0 {
+	if hasEffective {
+		if !validEffective {
+			return nil, ErrBadSet
+		}
 		magic |= vfsCapFlagsEffective
 	}
 	b := new(bytes.Buffer)
@@ -258,7 +267,7 @@ func (c *Set) setFiled(filed uintptr) error {
 	}
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	d, err := c.packFileCap()
+	d, err := c.packFileCapLocked()
 	if err != nil {
 		return err
 	}
@@ -337,7 +346,7 @@ func (c *Set) SetFile(path string) error {
 	}
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	d, err := c.packFileCap()
+	d, err := c.packFileCapLocked()
 	if err != nil {
 		return err
 	}
